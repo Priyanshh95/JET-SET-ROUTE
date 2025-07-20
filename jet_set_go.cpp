@@ -10,6 +10,7 @@
 #include <random>
 #include <fstream>
 #include <set>
+#include <sstream>
 
 
 using namespace std;
@@ -357,7 +358,52 @@ void AirportSystem::displayShortestPath(const string& start, const unordered_map
     }
 }
 
+struct User {
+    string username;
+    string password;
+    int age;
+    string address;
+    string mobile;
+};
 
+vector<User> loadUsers(const string& filename) {
+    vector<User> users;
+    ifstream in(filename);
+    if (!in) return users;
+    string line;
+    while (getline(in, line)) {
+        if (line.empty()) continue;
+        stringstream ss(line);
+        string username, password, ageStr, address, mobile;
+        getline(ss, username, ',');
+        getline(ss, password, ',');
+        getline(ss, ageStr, ',');
+        getline(ss, address, ',');
+        getline(ss, mobile, ',');
+        if (!username.empty() && !password.empty() && !ageStr.empty() && !address.empty() && !mobile.empty()) {
+            users.push_back({username, password, stoi(ageStr), address, mobile});
+        }
+    }
+    in.close();
+    return users;
+}
+
+void saveUser(const string& filename, const User& user) {
+    ofstream out(filename, ios::app);
+    if (!out) return;
+    out << user.username << "," << user.password << "," << user.age << "," << user.address << "," << user.mobile << "\n";
+    out.close();
+}
+
+bool userExists(const vector<User>& users, const string& username) {
+    for (const auto& u : users) if (u.username == username) return true;
+    return false;
+}
+
+User* authenticate(vector<User>& users, const string& username, const string& password) {
+    for (auto& u : users) if (u.username == username && u.password == password) return &u;
+    return nullptr;
+}
 
 // Function to print the main menu
 void printExtendedMenu()
@@ -378,80 +424,57 @@ int main()
 {
     srand(static_cast<unsigned int>(time(0)));
 
-    cout<<"-------------------------------*"<<endl;
-    cout<<"|                                                            |"<<endl;
-    cout<<"|                                                            |"<<endl;
-    cout<<"|                                                            |"<<endl;
-    cout<<"|                       JET SET GO                           |"<<endl;
-    cout<<"|                                                            |"<<endl;
-    cout<<"|                                                            |"<<endl;
-    cout<<"|                                                            |"<<endl;
-    cout<<"-------------------------------*"<<endl;
+    vector<User> users = loadUsers("users.txt");
+    User* currentUser = nullptr;
 
-
-    string userName;
-    int age;
-    string address;
-    string mobileNumber;
-
-    // Validate inputs
-    do
-    {
-        cout << "Enter your name: ";
-        getline(cin, userName);
-
-        if (!isValidName(userName))
-        {
-            cout << "Invalid name. Please enter a valid name (at least 3 characters).\n";
+    while (!currentUser) {
+        cout << "\nWelcome to JET SET GO!\n";
+        cout << "1. Register\n2. Login\n3. Exit\nEnter choice: ";
+        int choice;
+        cin >> choice;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        if (choice == 1) {
+            User newUser;
+            cout << "Enter username: "; getline(cin, newUser.username);
+            if (userExists(users, newUser.username)) {
+                cout << "Username already exists. Try another.\n";
+                continue;
+            }
+            cout << "Enter password: "; getline(cin, newUser.password);
+            do {
+                cout << "Enter your age (18-100): ";
+                cin >> newUser.age;
+                if (!isValidAge(newUser.age)) cout << "Invalid age. Please enter a valid age.\n";
+            } while (!isValidAge(newUser.age));
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            do {
+                cout << "Enter your address: "; getline(cin, newUser.address);
+                if (!isValidAddress(newUser.address)) cout << "Invalid address. Please enter a valid address.\n";
+            } while (!isValidAddress(newUser.address));
+            do {
+                cout << "Enter your mobile number (10 digits): "; getline(cin, newUser.mobile);
+                if (!isValidMobileNumber(newUser.mobile)) cout << "Invalid mobile number. Please enter a valid 10-digit mobile number.\n";
+            } while (!isValidMobileNumber(newUser.mobile));
+            users.push_back(newUser);
+            saveUser("users.txt", newUser);
+            cout << "Registration successful! Please login.\n";
+        } else if (choice == 2) {
+            string username, password;
+            cout << "Enter username: "; getline(cin, username);
+            cout << "Enter password: "; getline(cin, password);
+            currentUser = authenticate(users, username, password);
+            if (!currentUser) cout << "Invalid credentials. Try again.\n";
+        } else if (choice == 3) {
+            cout << "Goodbye!\n";
+            return 0;
+        } else {
+            cout << "Invalid choice.\n";
         }
     }
-    while (!isValidName(userName));
 
-    // Validate inputs
-    do
-    {
-        cout << "Enter your age (18-100): ";
-        cin >> age;
-
-        if (!isValidAge(age))
-        {
-            cout << "Invalid age. Please enter a valid age.\n";
-        }
-    }
-    while (!isValidAge(age));
-
-    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear input buffer
-
-    // Validate address
-    do
-    {
-        cout << "Enter your address: ";
-        getline(cin, address);
-
-        if (!isValidAddress(address))
-        {
-            cout << "Invalid address. Please enter a valid address.\n";
-        }
-    }
-    while (!isValidAddress(address));
-
-    // Validate mobile number
-    do
-    {
-        cout << "Enter your mobile number (10 digits): ";
-        cin >> mobileNumber;
-
-        if (!isValidMobileNumber(mobileNumber))
-        {
-            cout << "Invalid mobile number. Please enter a valid 10-digit mobile number.\n";
-        }
-    }
-    while (!isValidMobileNumber(mobileNumber));
-
-    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear input buffer
+    cout << "\nWelcome, " << currentUser->username << "!\n";
 
     AirportSystem airport;
-
     // Load flights and prices from file
     airport.loadFromFile("flights.txt");
 
