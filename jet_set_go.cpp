@@ -8,6 +8,8 @@
 #include <string>
 #include <limits>
 #include <random>
+#include <fstream>
+#include <set>
 
 
 using namespace std;
@@ -62,6 +64,9 @@ private:
     unordered_map<string, unordered_map<string, int>> prices; // Added to store flight prices
    // in format (source,destination,prices)
 
+    // Helper to avoid duplicate edges when saving
+    set<pair<string, string>> saved_edges;
+
 public:
     // Function to display the shortest path between two airports along with prices
     void displayShortestPath(const string& start, const unordered_map<string, int>& distances, const unordered_map<string, string>& previous, const string& destination);
@@ -87,6 +92,54 @@ public:
 
         prices[source][destination] = price; // Set the price for the flight
         prices[destination][source] = price; // Assuming prices are the same for round trips
+    }
+
+    // Save all flights to a file
+    void saveToFile(const string& filename) const {
+        ofstream out(filename);
+        if (!out) {
+            cerr << "Error opening file for saving flights!\n";
+            return;
+        }
+        set<pair<string, string>> written;
+        for (const auto& src : graph) {
+            for (const auto& dest : src.second) {
+                string a = src.first, b = dest.first;
+                if (written.count({a, b}) || written.count({b, a})) continue;
+                int distance = dest.second;
+                int price = 0;
+                auto it = prices.find(a);
+                if (it != prices.end() && it->second.find(b) != it->second.end())
+                    price = it->second.at(b);
+                out << a << "," << b << "," << distance << "," << price << "\n";
+                written.insert({a, b});
+            }
+        }
+        out.close();
+    }
+
+    // Load all flights from a file
+    void loadFromFile(const string& filename) {
+        ifstream in(filename);
+        if (!in) return; // No file to load
+        string line;
+        while (getline(in, line)) {
+            if (line.empty()) continue;
+            size_t p1 = line.find(",");
+            size_t p2 = line.find(",", p1+1);
+            size_t p3 = line.find(",", p2+1);
+            if (p1 == string::npos || p2 == string::npos || p3 == string::npos) continue;
+            string src = line.substr(0, p1);
+            string dest = line.substr(p1+1, p2-p1-1);
+            int distance = stoi(line.substr(p2+1, p3-p2-1));
+            int price = stoi(line.substr(p3+1));
+            // Insert both directions
+            graph[src].push_back({dest, distance});
+            graph[dest].push_back({src, distance});
+            prices[src][dest] = price;
+            prices[dest][src] = price;
+        }
+        in.close();
     }
 
 
@@ -399,6 +452,9 @@ int main()
 
     AirportSystem airport;
 
+    // Load flights and prices from file
+    airport.loadFromFile("flights.txt");
+
     while (true)
     {
         printExtendedMenu();
@@ -502,6 +558,8 @@ int main()
                 // Exit
                 cout << "Exiting the Extended Airport System. Goodbye!\n";
                 cout << endl;
+                // Save flights and prices to file
+                airport.saveToFile("flights.txt");
                 return 0;
             }
             else
