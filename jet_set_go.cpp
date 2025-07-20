@@ -491,6 +491,23 @@ void saveAllBookings(const string& filename, const vector<Booking>& bookings) {
     out.close();
 }
 
+// Helper for safe integer input
+int getIntInput(const string& prompt, int minVal = INT_MIN, int maxVal = INT_MAX) {
+    int value;
+    while (true) {
+        cout << prompt;
+        string line;
+        getline(cin, line);
+        stringstream ss(line);
+        if (ss >> value && !(ss >> line) && value >= minVal && value <= maxVal) {
+            return value;
+        }
+        cout << "Invalid input. Please enter a number";
+        if (minVal != INT_MIN || maxVal != INT_MAX) cout << " (" << minVal << "-" << maxVal << ")";
+        cout << ".\n";
+    }
+}
+
 // Function to print the main menu
 void printExtendedMenu()
 {
@@ -516,9 +533,7 @@ int main()
     while (!currentUser) {
         cout << "\nWelcome to JET SET GO!\n";
         cout << "1. Register\n2. Login\n3. Exit\nEnter choice: ";
-        int choice;
-        cin >> choice;
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        int choice = getIntInput("", 1, 3);
         if (choice == 1) {
             User newUser;
             cout << "Enter username: "; getline(cin, newUser.username);
@@ -527,12 +542,7 @@ int main()
                 continue;
             }
             cout << "Enter password: "; getline(cin, newUser.password);
-            do {
-                cout << "Enter your age (18-100): ";
-                cin >> newUser.age;
-                if (!isValidAge(newUser.age)) cout << "Invalid age. Please enter a valid age.\n";
-            } while (!isValidAge(newUser.age));
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            newUser.age = getIntInput("Enter your age (18-100): ", 18, 100);
             do {
                 cout << "Enter your address: "; getline(cin, newUser.address);
                 if (!isValidAddress(newUser.address)) cout << "Invalid address. Please enter a valid address.\n";
@@ -568,8 +578,6 @@ int main()
         } else if (choice == 3) {
             cout << "Goodbye!\n";
             return 0;
-        } else {
-            cout << "Invalid choice.\n";
         }
     }
 
@@ -597,13 +605,7 @@ int main()
             cout << "11. Search Flights by Price Range\n";
             cout << "12. Search Flights by Maximum Distance\n";
         }
-        int choice;
-        while(!(cin>>choice)){
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-           cout<<"invalid, Enter again:  ";
-}
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        int choice = getIntInput("Enter your choice: ", 1, 12);
         // Restrict add/remove flights to admin only
         if ((choice == 1 || choice == 2) && currentUser->role != "admin") {
             cout << "Only admins can add or remove flights.\n";
@@ -616,39 +618,31 @@ int main()
             // Add Flight
             cout << endl;
             string source, destination;
-            int price;
-
-            cout << "Enter source airport: ";
-            cin >> source;
-
-            cout << "Enter destination airport: ";
-            cin >> destination;
-
-            cout << "Enter price for the flight: ";
-            cin >> price;
-
+            int price = getIntInput("Enter price for the flight: ", 1);
+            cout << "Enter source airport: "; getline(cin, source);
+            cout << "Enter destination airport: "; getline(cin, destination);
+            if (source.empty() || destination.empty()) {
+                cout << "Source and destination cannot be empty.\n";
+                break;
+            }
             airport.addFlight(source, destination, price);
             cout << "Flight added successfully!\n";
-            cout << endl
-                 << endl;
+            cout << endl << endl;
             break;
         }
         case 2:
         {
             // Remove Flight
-            cout<<endl<<endl;
-            cout << endl;
+            cout << endl << endl;
             string source, destination;
-
-            cout << "Enter source airport: ";
-            cin >> source;
-
-            cout << "Enter destination airport: ";
-            cin >> destination;
-
+            cout << "Enter source airport: "; getline(cin, source);
+            cout << "Enter destination airport: "; getline(cin, destination);
+            if (source.empty() || destination.empty()) {
+                cout << "Source and destination cannot be empty.\n";
+                break;
+            }
             airport.removeFlight(source, destination);
-            cout << endl
-                 << endl;
+            cout << endl << endl;
             break;
         }
         case 3:
@@ -747,6 +741,10 @@ int main()
             string source; getline(cin, source);
             cout << "Enter destination airport of booking to cancel: ";
             string destination; getline(cin, destination);
+            if (source.empty() || destination.empty()) {
+                cout << "Source and destination cannot be empty.\n";
+                break;
+            }
             bool removed = false;
             for (auto it = bookings.begin(); it != bookings.end(); ++it) {
                 if (it->username == currentUser->username && it->source == source && it->destination == destination) {
@@ -762,18 +760,14 @@ int main()
         }
         case 11: {
             // Search Flights by Price Range
-            int minPrice, maxPrice;
-            cout << "Enter minimum price: "; cin >> minPrice;
-            cout << "Enter maximum price: "; cin >> maxPrice;
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            int minPrice = getIntInput("Enter minimum price: ", 0);
+            int maxPrice = getIntInput("Enter maximum price: ", minPrice);
             searchFlightsByPrice(airport, minPrice, maxPrice);
             break;
         }
         case 12: {
             // Search Flights by Maximum Distance
-            int maxDistance;
-            cout << "Enter maximum distance: "; cin >> maxDistance;
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            int maxDistance = getIntInput("Enter maximum distance: ", 1);
             searchFlightsByDistance(airport, maxDistance);
             break;
         }
