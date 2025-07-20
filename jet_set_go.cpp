@@ -12,6 +12,7 @@
 #include <set>
 #include <sstream>
 #include <map>
+#include <climits>
 
 
 using namespace std;
@@ -307,6 +308,10 @@ public:
             cout << "Invalid airport. Please enter a valid airport.\n";
         }
     }
+
+    // Public getters for graph and prices
+    const unordered_map<string, vector<pair<string, int>>>& getGraph() const { return graph; }
+    const unordered_map<string, unordered_map<string, int>>& getPrices() const { return prices; }
 };
 // Function to display the remaining routes between two airports
 
@@ -362,12 +367,12 @@ void AirportSystem::displayShortestPath(const string& start, const unordered_map
 void searchFlightsByPrice(const AirportSystem& airport, int minPrice, int maxPrice) {
     cout << "\nFlights with price between " << minPrice << " and " << maxPrice << ":\n";
     bool found = false;
-    for (const auto& src : airport.graph) {
+    for (const auto& src : airport.getGraph()) {
         for (const auto& dest : src.second) {
             if (src.first < dest.first) { // avoid duplicate pairs
                 int price = -1;
-                if (airport.prices.find(src.first) != airport.prices.end() && airport.prices.at(src.first).find(dest.first) != airport.prices.at(src.first).end()) {
-                    price = airport.prices.at(src.first).at(dest.first);
+                if (airport.getPrices().find(src.first) != airport.getPrices().end() && airport.getPrices().at(src.first).find(dest.first) != airport.getPrices().at(src.first).end()) {
+                    price = airport.getPrices().at(src.first).at(dest.first);
                 }
                 if (price >= minPrice && price <= maxPrice) {
                     cout << "From: " << src.first << ", To: " << dest.first << ", Price: " << price << " rupees\n";
@@ -382,12 +387,12 @@ void searchFlightsByPrice(const AirportSystem& airport, int minPrice, int maxPri
 void searchFlightsByDistance(const AirportSystem& airport, int maxDistance) {
     cout << "\nFlights with distance less than or equal to " << maxDistance << ":\n";
     bool found = false;
-    for (const auto& src : airport.graph) {
+    for (const auto& src : airport.getGraph()) {
         for (const auto& dest : src.second) {
             if (src.first < dest.first && dest.second <= maxDistance) { // avoid duplicate pairs
                 int price = -1;
-                if (airport.prices.find(src.first) != airport.prices.end() && airport.prices.at(src.first).find(dest.first) != airport.prices.at(src.first).end()) {
-                    price = airport.prices.at(src.first).at(dest.first);
+                if (airport.getPrices().find(src.first) != airport.getPrices().end() && airport.getPrices().at(src.first).find(dest.first) != airport.getPrices().at(src.first).end()) {
+                    price = airport.getPrices().at(src.first).at(dest.first);
                 }
                 cout << "From: " << src.first << ", To: " << dest.first << ", Distance: " << dest.second << " km, Price: " << price << " rupees\n";
                 found = true;
@@ -513,7 +518,7 @@ int getIntInput(const string& prompt, int minVal = INT_MIN, int maxVal = INT_MAX
 void printExtendedMenu()
 {
     cout<<endl;
-    cout << "Extended Airport System Menu:\n";
+    cout << "Airport System Menu:\n";
     cout << "1. Add Flight\n";
     cout << "2. Remove Flight\n";
     cout << "3. Find Shortest Path\n";
@@ -521,7 +526,7 @@ void printExtendedMenu()
     cout << "5. Display Flight Details\n";
     cout << "6. Display All Routes from an Airport\n";
     cout << "7. Exit\n";
-    cout << "Enter your choice: ";
+    // Do not print 'Enter your choice:' here; it will be printed after all menu options in main
 }
 
 void showStatistics(const vector<Booking>& bookings, const User* currentUser) {
@@ -766,7 +771,7 @@ int main()
             }
             // Find the distance and price
             int distance = -1, price = -1;
-            for (const auto& flight : airport.graph[source]) {
+            for (const auto& flight : airport.getGraph().at(source)) {
                 if (flight.first == destination) {
                     distance = flight.second;
                     break;
@@ -776,8 +781,8 @@ int main()
                 cout << "No direct flight found.\n";
                 break;
             }
-            if (airport.prices.find(source) != airport.prices.end() && airport.prices[source].find(destination) != airport.prices[source].end()) {
-                price = airport.prices[source][destination];
+            if (airport.getPrices().find(source) != airport.getPrices().end() && airport.getPrices().at(source).find(destination) != airport.getPrices().at(source).end()) {
+                price = airport.getPrices().at(source).at(destination);
             }
             if (price == -1) {
                 cout << "Price information not available.\n";
