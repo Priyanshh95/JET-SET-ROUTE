@@ -358,6 +358,44 @@ void AirportSystem::displayShortestPath(const string& start, const unordered_map
     }
 }
 
+void searchFlightsByPrice(const AirportSystem& airport, int minPrice, int maxPrice) {
+    cout << "\nFlights with price between " << minPrice << " and " << maxPrice << ":\n";
+    bool found = false;
+    for (const auto& src : airport.graph) {
+        for (const auto& dest : src.second) {
+            if (src.first < dest.first) { // avoid duplicate pairs
+                int price = -1;
+                if (airport.prices.find(src.first) != airport.prices.end() && airport.prices.at(src.first).find(dest.first) != airport.prices.at(src.first).end()) {
+                    price = airport.prices.at(src.first).at(dest.first);
+                }
+                if (price >= minPrice && price <= maxPrice) {
+                    cout << "From: " << src.first << ", To: " << dest.first << ", Price: " << price << " rupees\n";
+                    found = true;
+                }
+            }
+        }
+    }
+    if (!found) cout << "No flights found in this price range.\n";
+}
+
+void searchFlightsByDistance(const AirportSystem& airport, int maxDistance) {
+    cout << "\nFlights with distance less than or equal to " << maxDistance << ":\n";
+    bool found = false;
+    for (const auto& src : airport.graph) {
+        for (const auto& dest : src.second) {
+            if (src.first < dest.first && dest.second <= maxDistance) { // avoid duplicate pairs
+                int price = -1;
+                if (airport.prices.find(src.first) != airport.prices.end() && airport.prices.at(src.first).find(dest.first) != airport.prices.at(src.first).end()) {
+                    price = airport.prices.at(src.first).at(dest.first);
+                }
+                cout << "From: " << src.first << ", To: " << dest.first << ", Distance: " << dest.second << " km, Price: " << price << " rupees\n";
+                found = true;
+            }
+        }
+    }
+    if (!found) cout << "No flights found within this distance.\n";
+}
+
 struct User {
     string username;
     string password;
@@ -533,6 +571,8 @@ int main()
         cout << "8. Book a Flight\n";
         cout << "9. View My Bookings\n";
         cout << "10. Cancel a Booking\n";
+        cout << "11. Search Flights by Price Range\n";
+        cout << "12. Search Flights by Maximum Distance\n";
 
         int choice;
 
@@ -692,6 +732,23 @@ int main()
                 }
             }
             if (!removed) cout << "No such booking found.\n";
+            break;
+        }
+        case 11: {
+            // Search Flights by Price Range
+            int minPrice, maxPrice;
+            cout << "Enter minimum price: "; cin >> minPrice;
+            cout << "Enter maximum price: "; cin >> maxPrice;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            searchFlightsByPrice(airport, minPrice, maxPrice);
+            break;
+        }
+        case 12: {
+            // Search Flights by Maximum Distance
+            int maxDistance;
+            cout << "Enter maximum distance: "; cin >> maxDistance;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            searchFlightsByDistance(airport, maxDistance);
             break;
         }
         default:
