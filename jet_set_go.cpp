@@ -11,6 +11,7 @@
 #include <fstream>
 #include <set>
 #include <sstream>
+#include <map>
 
 
 using namespace std;
@@ -523,6 +524,52 @@ void printExtendedMenu()
     cout << "Enter your choice: ";
 }
 
+void showStatistics(const vector<Booking>& bookings, const User* currentUser) {
+    cout << "\n--- Statistics & Analytics ---\n";
+    if (bookings.empty()) {
+        cout << "No bookings available for statistics.\n";
+        return;
+    }
+    // Most popular routes
+    map<pair<string, string>, int> routeCount;
+    map<string, int> airportCount;
+    map<string, int> userCount;
+    for (const auto& b : bookings) {
+        string a = b.source, d = b.destination;
+        if (a > d) swap(a, d);
+        routeCount[{a, d}]++;
+        airportCount[b.source]++;
+        airportCount[b.destination]++;
+        userCount[b.username]++;
+    }
+    // Popular routes
+    int maxRoute = 0;
+    for (const auto& rc : routeCount) maxRoute = max(maxRoute, rc.second);
+    cout << "Most Popular Route(s):\n";
+    for (const auto& rc : routeCount) {
+        if (rc.second == maxRoute) {
+            cout << "  " << rc.first.first << " <-> " << rc.first.second << " (" << rc.second << " bookings)\n";
+        }
+    }
+    // Busiest airports
+    int maxAirport = 0;
+    for (const auto& ac : airportCount) maxAirport = max(maxAirport, ac.second);
+    cout << "Busiest Airport(s):\n";
+    for (const auto& ac : airportCount) {
+        if (ac.second == maxAirport) {
+            cout << "  " << ac.first << " (" << ac.second << " uses)\n";
+        }
+    }
+    // User booking stats (admin only)
+    if (currentUser && currentUser->role == "admin") {
+        cout << "User Booking Counts:\n";
+        for (const auto& uc : userCount) {
+            cout << "  " << uc.first << ": " << uc.second << " bookings\n";
+        }
+    }
+    cout << "-----------------------------\n";
+}
+
 int main()
 {
     srand(static_cast<unsigned int>(time(0)));
@@ -598,14 +645,16 @@ int main()
             cout << "10. Cancel a Booking\n";
             cout << "11. Search Flights by Price Range\n";
             cout << "12. Search Flights by Maximum Distance\n";
+            cout << "13. View Statistics\n";
         } else {
             cout << "8. Book a Flight\n";
             cout << "9. View My Bookings\n";
             cout << "10. Cancel a Booking\n";
             cout << "11. Search Flights by Price Range\n";
             cout << "12. Search Flights by Maximum Distance\n";
+            cout << "13. View Statistics\n";
         }
-        int choice = getIntInput("Enter your choice: ", 1, 12);
+        int choice = getIntInput("Enter your choice: ", 1, 13);
         // Restrict add/remove flights to admin only
         if ((choice == 1 || choice == 2) && currentUser->role != "admin") {
             cout << "Only admins can add or remove flights.\n";
@@ -769,6 +818,11 @@ int main()
             // Search Flights by Maximum Distance
             int maxDistance = getIntInput("Enter maximum distance: ", 1);
             searchFlightsByDistance(airport, maxDistance);
+            break;
+        }
+        case 13: {
+            // View Statistics
+            showStatistics(bookings, currentUser);
             break;
         }
         default:
