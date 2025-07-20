@@ -570,6 +570,22 @@ void showStatistics(const vector<Booking>& bookings, const User* currentUser) {
     cout << "-----------------------------\n";
 }
 
+void showHelp() {
+    cout << "\n--- JET SET GO: Help & Instructions ---\n";
+    cout << "1. Register or log in to use the system.\n";
+    cout << "2. Admins can add or remove flights.\n";
+    cout << "3. All users can:\n";
+    cout << "   - Book flights between airports\n";
+    cout << "   - View and cancel their bookings\n";
+    cout << "   - Search flights by price or distance\n";
+    cout << "   - View statistics (admins see user stats too)\n";
+    cout << "4. Data is saved automatically; your bookings and flights persist.\n";
+    cout << "5. Input is validated; follow prompts for correct formats.\n";
+    cout << "6. To become admin (if not first user), use code: JETADMIN2024 during registration.\n";
+    cout << "7. For any invalid input, you will be prompted to try again.\n";
+    cout << "----------------------------------------\n";
+}
+
 int main()
 {
     srand(static_cast<unsigned int>(time(0)));
@@ -646,6 +662,7 @@ int main()
             cout << "11. Search Flights by Price Range\n";
             cout << "12. Search Flights by Maximum Distance\n";
             cout << "13. View Statistics\n";
+            cout << "14. Help\n";
         } else {
             cout << "8. Book a Flight\n";
             cout << "9. View My Bookings\n";
@@ -653,8 +670,9 @@ int main()
             cout << "11. Search Flights by Price Range\n";
             cout << "12. Search Flights by Maximum Distance\n";
             cout << "13. View Statistics\n";
+            cout << "14. Help\n";
         }
-        int choice = getIntInput("Enter your choice: ", 1, 13);
+        int choice = getIntInput("Enter your choice: ", 1, 14);
         // Restrict add/remove flights to admin only
         if ((choice == 1 || choice == 2) && currentUser->role != "admin") {
             cout << "Only admins can add or remove flights.\n";
@@ -823,6 +841,11 @@ int main()
         case 13: {
             // View Statistics
             showStatistics(bookings, currentUser);
+            break;
+        }
+        case 14: {
+            // Help
+            showHelp();
             break;
         }
         default:
