@@ -405,6 +405,52 @@ User* authenticate(vector<User>& users, const string& username, const string& pa
     return nullptr;
 }
 
+struct Booking {
+    string username;
+    string source;
+    string destination;
+    int distance;
+    int price;
+};
+
+vector<Booking> loadBookings(const string& filename) {
+    vector<Booking> bookings;
+    ifstream in(filename);
+    if (!in) return bookings;
+    string line;
+    while (getline(in, line)) {
+        if (line.empty()) continue;
+        stringstream ss(line);
+        string username, source, destination, distStr, priceStr;
+        getline(ss, username, ',');
+        getline(ss, source, ',');
+        getline(ss, destination, ',');
+        getline(ss, distStr, ',');
+        getline(ss, priceStr, ',');
+        if (!username.empty() && !source.empty() && !destination.empty() && !distStr.empty() && !priceStr.empty()) {
+            bookings.push_back({username, source, destination, stoi(distStr), stoi(priceStr)});
+        }
+    }
+    in.close();
+    return bookings;
+}
+
+void saveBooking(const string& filename, const Booking& booking) {
+    ofstream out(filename, ios::app);
+    if (!out) return;
+    out << booking.username << "," << booking.source << "," << booking.destination << "," << booking.distance << "," << booking.price << "\n";
+    out.close();
+}
+
+void saveAllBookings(const string& filename, const vector<Booking>& bookings) {
+    ofstream out(filename);
+    if (!out) return;
+    for (const auto& b : bookings) {
+        out << b.username << "," << b.source << "," << b.destination << "," << b.distance << "," << b.price << "\n";
+    }
+    out.close();
+}
+
 // Function to print the main menu
 void printExtendedMenu()
 {
@@ -478,9 +524,15 @@ int main()
     // Load flights and prices from file
     airport.loadFromFile("flights.txt");
 
+    vector<Booking> bookings = loadBookings("bookings.txt");
+
     while (true)
     {
         printExtendedMenu();
+
+        cout << "8. Book a Flight\n";
+        cout << "9. View My Bookings\n";
+        cout << "10. Cancel a Booking\n";
 
         int choice;
 
@@ -489,6 +541,7 @@ int main()
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
            cout<<"invalid, Enter again:  ";
 }
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
         switch (choice)
         {
@@ -575,14 +628,81 @@ int main()
             cout << endl;
             break;
         }
+        case 8: {
+            // Book a Flight
+            string source, destination;
+            cout << "Enter source airport: "; getline(cin, source);
+            cout << "Enter destination airport: "; getline(cin, destination);
+            if (!airport.isValidAirport(source) || !airport.isValidAirport(destination)) {
+                cout << "Invalid source or destination airport.\n";
+                break;
+            }
+            // Find the distance and price
+            int distance = -1, price = -1;
+            for (const auto& flight : airport.graph[source]) {
+                if (flight.first == destination) {
+                    distance = flight.second;
+                    break;
+                }
+            }
+            if (distance == -1) {
+                cout << "No direct flight found.\n";
+                break;
+            }
+            if (airport.prices.find(source) != airport.prices.end() && airport.prices[source].find(destination) != airport.prices[source].end()) {
+                price = airport.prices[source][destination];
+            }
+            if (price == -1) {
+                cout << "Price information not available.\n";
+                break;
+            }
+            Booking booking{currentUser->username, source, destination, distance, price};
+            bookings.push_back(booking);
+            saveBooking("bookings.txt", booking);
+            cout << "Flight booked successfully!\n";
+            break;
+        }
+        case 9: {
+            // View My Bookings
+            cout << "\nYour Bookings:\n";
+            bool found = false;
+            for (const auto& b : bookings) {
+                if (b.username == currentUser->username) {
+                    cout << "From: " << b.source << ", To: " << b.destination << ", Distance: " << b.distance << " km, Price: " << b.price << " rupees\n";
+                    found = true;
+                }
+            }
+            if (!found) cout << "No bookings found.\n";
+            break;
+        }
+        case 10: {
+            // Cancel a Booking
+            cout << "Enter source airport of booking to cancel: ";
+            string source; getline(cin, source);
+            cout << "Enter destination airport of booking to cancel: ";
+            string destination; getline(cin, destination);
+            bool removed = false;
+            for (auto it = bookings.begin(); it != bookings.end(); ++it) {
+                if (it->username == currentUser->username && it->source == source && it->destination == destination) {
+                    bookings.erase(it);
+                    saveAllBookings("bookings.txt", bookings);
+                    cout << "Booking cancelled.\n";
+                    removed = true;
+                    break;
+                }
+            }
+            if (!removed) cout << "No such booking found.\n";
+            break;
+        }
         default:
             if (choice == 7)
             {
-                // Exit
-                cout << "Exiting the Extended Airport System. Goodbye!\n";
-                cout << endl;
                 // Save flights and prices to file
                 airport.saveToFile("flights.txt");
+                // Save all bookings to file
+                saveAllBookings("bookings.txt", bookings);
+                cout << "Exiting the Extended Airport System. Goodbye!\n";
+                cout << endl;
                 return 0;
             }
             else
