@@ -402,6 +402,7 @@ struct User {
     int age;
     string address;
     string mobile;
+    string role; // "admin" or "user"
 };
 
 vector<User> loadUsers(const string& filename) {
@@ -412,14 +413,15 @@ vector<User> loadUsers(const string& filename) {
     while (getline(in, line)) {
         if (line.empty()) continue;
         stringstream ss(line);
-        string username, password, ageStr, address, mobile;
+        string username, password, ageStr, address, mobile, role;
         getline(ss, username, ',');
         getline(ss, password, ',');
         getline(ss, ageStr, ',');
         getline(ss, address, ',');
         getline(ss, mobile, ',');
-        if (!username.empty() && !password.empty() && !ageStr.empty() && !address.empty() && !mobile.empty()) {
-            users.push_back({username, password, stoi(ageStr), address, mobile});
+        getline(ss, role, ',');
+        if (!username.empty() && !password.empty() && !ageStr.empty() && !address.empty() && !mobile.empty() && !role.empty()) {
+            users.push_back({username, password, stoi(ageStr), address, mobile, role});
         }
     }
     in.close();
@@ -429,7 +431,7 @@ vector<User> loadUsers(const string& filename) {
 void saveUser(const string& filename, const User& user) {
     ofstream out(filename, ios::app);
     if (!out) return;
-    out << user.username << "," << user.password << "," << user.age << "," << user.address << "," << user.mobile << "\n";
+    out << user.username << "," << user.password << "," << user.age << "," << user.address << "," << user.mobile << "," << user.role << "\n";
     out.close();
 }
 
@@ -539,6 +541,21 @@ int main()
                 cout << "Enter your mobile number (10 digits): "; getline(cin, newUser.mobile);
                 if (!isValidMobileNumber(newUser.mobile)) cout << "Invalid mobile number. Please enter a valid 10-digit mobile number.\n";
             } while (!isValidMobileNumber(newUser.mobile));
+            // Assign role
+            if (users.empty()) {
+                newUser.role = "admin";
+                cout << "You are the first user and have been assigned admin role.\n";
+            } else {
+                cout << "Enter admin code to register as admin (or press Enter to register as user): ";
+                string code; getline(cin, code);
+                if (code == "JETADMIN2024") {
+                    newUser.role = "admin";
+                    cout << "Admin role assigned.\n";
+                } else {
+                    newUser.role = "user";
+                    cout << "User role assigned.\n";
+                }
+            }
             users.push_back(newUser);
             saveUser("users.txt", newUser);
             cout << "Registration successful! Please login.\n";
@@ -567,22 +584,31 @@ int main()
     while (true)
     {
         printExtendedMenu();
-
-        cout << "8. Book a Flight\n";
-        cout << "9. View My Bookings\n";
-        cout << "10. Cancel a Booking\n";
-        cout << "11. Search Flights by Price Range\n";
-        cout << "12. Search Flights by Maximum Distance\n";
-
+        if (currentUser->role == "admin") {
+            cout << "8. Book a Flight\n";
+            cout << "9. View My Bookings\n";
+            cout << "10. Cancel a Booking\n";
+            cout << "11. Search Flights by Price Range\n";
+            cout << "12. Search Flights by Maximum Distance\n";
+        } else {
+            cout << "8. Book a Flight\n";
+            cout << "9. View My Bookings\n";
+            cout << "10. Cancel a Booking\n";
+            cout << "11. Search Flights by Price Range\n";
+            cout << "12. Search Flights by Maximum Distance\n";
+        }
         int choice;
-
         while(!(cin>>choice)){
         cin.clear();
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
            cout<<"invalid, Enter again:  ";
 }
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
+        // Restrict add/remove flights to admin only
+        if ((choice == 1 || choice == 2) && currentUser->role != "admin") {
+            cout << "Only admins can add or remove flights.\n";
+            continue;
+        }
         switch (choice)
         {
         case 1:
